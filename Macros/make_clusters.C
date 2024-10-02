@@ -76,21 +76,13 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
     int time_list[N];
     int adcA_list[N];
     int adcB_list[N];
-    
+
+    // Set the Output tree branches    
     cluster_tree->Branch("strips", &strip_list, Form("strips[%d]/I", N));
     cluster_tree->Branch("times", &time_list, Form("times[%d]/I", N));
     cluster_tree->Branch("adcA", &adcA_list, Form("adcA[%d]/I", N));
     cluster_tree->Branch("adcB", &adcB_list, Form("adcB[%d]/I", N));
-    //cluster_tree->Branch("strips", &strip_list);
-    //cluster_tree->Branch("times", &time_list);
-    //cluster_tree->Branch("adcA", &adcA_list);
-    //cluster_tree->Branch("adcB", &adcB_list);
 
-    // Initialize output TNtuples
-    //TNtuple* time_tree = new TNtuple("time_tree", "time_tree", feb_string.c_str());
-    //TNtuple* strip_tree = new TNtuple("strip_tree", "strip_tree", feb_string.c_str());
-    //TNtuple* adcA_tree = new TNtuple("adcA_tree", "adcA_tree", feb_string.c_str());
-    //TNtuple* adcB_tree = new TNtuple("adcB_tree", "adcB_tree", feb_string.c_str());
 
     // Access the event tree
     TTree* event_tree = (TTree*)infile->Get("reco/events");
@@ -123,10 +115,15 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
       event_tree->SetBranchAddress(branchName.c_str(), &adc[i]);
     }
 
+    std::cout << std::endl;
+    std::cout << "Starting the Event Loop ..." << std::endl;
+    std::cout << std::endl;
+
     // Event loop
     int count = 0;
     for (Long64_t i = 0; i < n_entries; ++i) {
         event_tree->GetEntry(i);
+
 
         if (count % 1000 == 0) {
             std::cout << "Processing event " << count << " Run " << Run << std::endl;
@@ -175,9 +172,9 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
 	    continue;
 	  }
 
-          uint64_t cluster_id = time_hist->FindBin(new_times.at(f)) - 1;
-	  cluster_febs[cluster_id].push_back(mac5->at(f));
-	  cluster_times[cluster_id].push_back(new_times.at(f));
+          //uint64_t cluster_id = time_hist->FindBin(new_times.at(f)) - 1;
+	  //cluster_febs[cluster_id].push_back(mac5->at(f));
+	  //cluster_times[cluster_id].push_back(new_times.at(f));
 	  
 	  int maxADC = 0;
 	  int max_id = -1;
@@ -189,6 +186,15 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
 	      max_id = num;
             }
 	  } // end of loop over 32 channels
+          
+	  // check if ADC == 0 --> Weird stuff ???
+	  if (max_id == -1) {
+            continue;
+          }
+
+	  uint64_t cluster_id = time_hist->FindBin(new_times.at(f)) - 1;
+	  cluster_febs[cluster_id].push_back(mac5->at(f));
+	  cluster_times[cluster_id].push_back(new_times.at(f));
 	  
 	  //int curr_strip = static_cast<int>(max_id/2);
 	  //std::cout << "current strip " << curr_strip << std::endl;
@@ -205,8 +211,12 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
 	  }
 
 	} // end of flag loop
-
+	
         delete time_hist;
+
+        if (count % 1000 == 0) {
+	  std::cout << "Start loop over std::maps --> Pre Clusters" << std::endl;
+	}
 	// Process formed clusters
 	
 	for (const auto & [key, value] : cluster_febs) {
@@ -223,10 +233,6 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
 	  int nl = lv0 + lv1;
 	  int nr = rv0 + rv1;
 
-	  //int strip_list[horiz_febs.size()];
-	  //uint64_t time_list[horiz_febs.size()];
-	  //int adcA_list[horiz_febs.size()];
-	  //int adcB_list[horiz_febs.size()];
 	
 	  //strip_list.clear();
 	  //time_list.clear();
@@ -269,10 +275,7 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
 	    */
 
 	    cluster_tree->Fill();
-	    //strip_tree->Fill(strip_list);
-	    //time_tree->Fill(time_list);
-	    //adcA_tree->Fill(adcA_list);
-	    //adcB_tree->Fill(adcB_list);
+
 	  }
 	  else {
 	    continue;
@@ -285,6 +288,10 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
 	cluster_adcA.clear();
 	cluster_adcB.clear();
 
+        if (count % 1000 == 0) {
+	  std::cout << "Finished loop over std::map pre clusters and cleared them" << std::endl;
+	  std::cout << std::endl;
+	}
         count++;
     }
 
