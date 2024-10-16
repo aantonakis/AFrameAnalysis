@@ -70,18 +70,22 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
     std::cout << "FEB String " << feb_string << std::endl;
 
     const int N = horiz_febs.size() + 1; // add 1 for the Run
+    const int NV = 5; // 4 verticals + 1 for the run
+
 
     TTree* cluster_tree = new TTree("cluster_tree", "cluster_tree");
     int strip_list[N];
     int time_list[N];
     int adcA_list[N];
     int adcB_list[N];
-
+    int vert_list[NV];
+	
     // Set the Output tree branches    
     cluster_tree->Branch("strips", &strip_list, Form("strips[%d]/I", N));
     cluster_tree->Branch("times", &time_list, Form("times[%d]/I", N));
     cluster_tree->Branch("adcA", &adcA_list, Form("adcA[%d]/I", N));
     cluster_tree->Branch("adcB", &adcB_list, Form("adcB[%d]/I", N));
+    cluster_tree->Branch("vert", &vert_list, Form("vert[%d]/I", NV));
 
 
     // Access the event tree
@@ -118,12 +122,18 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
     std::cout << std::endl;
     std::cout << "Starting the Event Loop ..." << std::endl;
     std::cout << std::endl;
-
+   
+    int curr_run = 0;
     // Event loop
     int count = 0;
     for (Long64_t i = 0; i < n_entries; ++i) {
         event_tree->GetEntry(i);
 
+	if (Run != curr_run) {
+	  count = 0;
+	}
+
+	curr_run = Run;
 
         if (count % 1000 == 0) {
             std::cout << "Processing event " << count << " Run " << Run << std::endl;
@@ -135,6 +145,11 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
             continue;
         }
 
+        // Add for Frame 1 to test FEB 238 Problems
+        if (count < 2000) {
+          count += 1;
+	  continue;
+	}
 
         auto min_time = std::min_element(timestamp->begin(), timestamp->end());
         auto max_time = std::max_element(timestamp->begin(), timestamp->end());
@@ -191,10 +206,24 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
 	  if (max_id == -1) {
             continue;
           }
+	
+	  uint64_t t = new_times.at(f);
 
-	  uint64_t cluster_id = time_hist->FindBin(new_times.at(f)) - 1;
+	  // --------------------------------------------------------------------------- //
+	  
+	  // Lines for Correcting Frame 1 FEB Timestamp Problems
+
+          //if (mac5->at(f) == 181 || mac5->at(f) == 153 || mac5->at(f) == 155) {t -= 30;}
+          if (mac5->at(f) == 238 || mac5->at(f) == 181 || mac5->at(f) == 153 || mac5->at(f) == 155) {t -= 30;}
+	  //if (mac5->at(f) == 238) {t -= 40;}
+
+	  // --------------------------------------------------------------------------- //
+	  
+          //uint64_t cluster_id = time_hist->FindBin(new_times.at(f)) - 1;
+	  uint64_t cluster_id = time_hist->FindBin(t) - 1;
 	  cluster_febs[cluster_id].push_back(mac5->at(f));
-	  cluster_times[cluster_id].push_back(new_times.at(f));
+	  //cluster_times[cluster_id].push_back(new_times.at(f));
+	  cluster_times[cluster_id].push_back(t);
 	  
 	  //int curr_strip = static_cast<int>(max_id/2);
 	  //std::cout << "current strip " << curr_strip << std::endl;
@@ -244,9 +273,18 @@ void make_clusters(const char* input_file, const char* output_file, const char* 
 	  time_list[0] = Run;
 	  adcA_list[0] = Run;
 	  adcB_list[0] = Run;
+	  vert_list[0] = Run;
 
 	  // must have exactly 1 vertical on each side
 	  if ((nl == 1) && (nr == 1)) {
+            // loop over verticals and add the ids
+	    for (int v = 0; v < 4; ++v) {
+              if (v == 0) {vert_list[v+1] = lv0;}
+              if (v == 1) {vert_list[v+1] = lv1;}
+              if (v == 2) {vert_list[v+1] = rv0;}
+              if (v == 3) {vert_list[v+1] = rv1;}
+	    }
+
 	    //std::cout << "Found a cluster !!!" << std::endl;
 	    // loop over all the horizontal febs in this file
 	    for (int f = 0; f < horiz_febs.size(); ++f) {

@@ -1,7 +1,7 @@
 #include "crt_feb_standard.fcl"
 
-FEB018Configuration:  @local::FEBConfigurationStandard
-FEB018Configuration.channel_configuration: [
+FEB199Configuration:  @local::FEBConfigurationStandard
+FEB199Configuration.channel_configuration: [
 [ 0, 0, 1, 200, 1, 35, 47, 0, 0, 1], # Channel 0 
 [ 0, 0, 1, 200, 1, 35, 47, 0, 0, 1], # Channel 1 
 [ 0, 0, 1, 192, 1, 35, 47, 0, 0, 1], # Channel 2 
@@ -32,6 +32,6 @@ FEB018Configuration.channel_configuration: [
 [ 0, 0, 1, 192, 1, 35, 47, 0, 0, 1], # Channel 27 
 [ 0, 0, 1, 192, 1, 35, 47, 0, 0, 1], # Channel 28 
 [ 0, 0, 1, 192, 1, 35, 47, 0, 0, 1], # Channel 29 
-[ 0, 0, 1, 198, 1, 35, 47, 0, 0, 1], # Channel 30 
-[ 0, 0, 1, 198, 1, 35, 47, 0, 0, 1] # Channel 31 
+[ 0, 0, 1, 230, 1, 35, 47, 0, 0, 1], # Channel 30 
+[ 0, 0, 1, 230, 1, 35, 47, 0, 0, 1] # Channel 31 
          ]
